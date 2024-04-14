@@ -3,7 +3,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import handlebars from 'express-handlebars';
 import __dirname from './utils.js';
-import {  addLogger } from './utils/new_logger.js';
+import { addLogger } from './utils/new_logger.js';
 import methodOverride from 'method-override';
 import { allowInsecurePrototypeAccess } from '@handlebars/allow-prototype-access';
 import MongoStore from 'connect-mongo';
@@ -17,7 +17,7 @@ import cors from 'cors';
 import initSocket from './socketManager.js';
 
 import swaggerJSDoc from 'swagger-jsdoc';
-import swaggerUiExpres from 'swagger-ui-express'
+import swaggerUiExpres from 'swagger-ui-express';
 
 import ViewsRouter from './routes/views.router.js';
 import sessionRouter from './routes/sessions.routes.js';
@@ -26,7 +26,7 @@ import CartsRouter from './routes/mongo/carts.routes.js';
 import MessagesRouter from './routes/chat/messages.routes.js';
 import PasswordRouter from './routes/mongo/password.routes.js';
 import { createMessage } from './controllers/messages.controller.js';
-import UsersExtendRouter from './routes/custom/users.extend.router.js';
+import UsersdRouter from './routes/users.router.js';
 import axios from 'axios';
 import emailRouter from './routes/mensajeria/email.router.js';
 import smsRouter from './routes/mensajeria/sms.router.js';
@@ -42,9 +42,8 @@ app.use(cookieParserMiddleware);
 
 app.use(addLogger);
 
-
 //Configuración de la conexión a MongoDB y sesiones
-const MONGO_URL = config.urlMongo; 
+const MONGO_URL = config.urlMongo;
 app.use(
   session({
     store: MongoStore.create({
@@ -62,19 +61,18 @@ app.use(
 
 //documentacion
 const swaggerOptions = {
-  definition:{
-      openapi:'3.0.1',
-      info:{
-          title:"Documentacion de  la API",
-          description: "Documentación de la API ecommerce"
-      }
+  definition: {
+    openapi: '3.0.1',
+    info: {
+      title: 'Documentacion de  la API',
+      description: 'Documentación de la API ecommerce',
+    },
   },
-  apis:[`${__dirname}/docs/**/*.yaml`]
-}
+  apis: [`${__dirname}/docs/**/*.yaml`],
+};
 
 const specs = swaggerJSDoc(swaggerOptions);
-app.use('/apidocs', swaggerUiExpres.serve, swaggerUiExpres.setup(specs))
-
+app.use('/apidocs', swaggerUiExpres.serve, swaggerUiExpres.setup(specs));
 
 //Configuración de CORS
 const corsOptions = {
@@ -121,10 +119,10 @@ app.set('view engine', 'hbs');
 app.set('views', __dirname + '/views');
 
 //Configuración de rutas:
-const viewsRouter = new ViewsRouter()
+const viewsRouter = new ViewsRouter();
 app.use('/', viewsRouter.getRouter());
-const usersExtendRouter = new UsersExtendRouter();
-app.use('/api/extend/users', usersExtendRouter.getRouter());
+const usersRouter = new UsersdRouter();
+app.use('/api/users', usersRouter.getRouter());
 const productRouter = new ProductsRouter();
 app.use('/api/products', productRouter.getRouter());
 const cartRouter = new CartsRouter();
@@ -136,8 +134,8 @@ app.use('/api/email', emailRouter);
 app.use('/api/sms', smsRouter);
 const mockingRouter = new MockingRouter();
 app.use('/mockingproducts', mockingRouter.getRouter());
-const passwordRouter = new PasswordRouter()
-app.use('/api/password', passwordRouter.getRouter())
+const passwordRouter = new PasswordRouter();
+app.use('/api/password', passwordRouter.getRouter());
 //Inicio del servidor y configuración de sockets
 const httpServer = app.listen(PORT, () => {
   // console.log(`Server run on port: ${PORT}`);
@@ -155,5 +153,3 @@ const mongoInstance = async () => {
 mongoInstance();
 
 initSocket(httpServer);
-
-
