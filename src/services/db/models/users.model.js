@@ -39,6 +39,16 @@ const userSchema = new Schema({
     default: 'user', // Valor por defecto "user"
     required: true,
   },
+  documents: [
+    {
+      name: { type: String },
+      refrence: { type: String },
+    },
+  ],
+  last_connection: {
+    type: Date, // Tipo de dato para almacenar fecha y hora
+    required: false,
+  },
 });
 
 /* userSchema.pre('find', function(){

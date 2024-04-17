@@ -4,7 +4,6 @@ import { createHash, isValidPassword, generateJWToken } from '../utils.js';
 import config from '../config/config.js';
 
 //const productService = new ProductService();
-
 export const getAll = async (req, res) => {
   try {
     const { limit, page, query, sort } = req.body;
@@ -30,7 +29,7 @@ export const current = async (req, res) => {
     res
       .status(500)
       .send({ error: error, message: 'No se pudo obtener usuario actual.' });
-   // res.sendSuccess(user);
+    // res.sendSuccess(user);
   }
 };
 
@@ -54,7 +53,7 @@ export const premiumUserChange = async (req, res) => {
           : user.role === 'premium'
           ? 'user'
           : user.role;
-      
+
       // Ahora puedes utilizar la variable newRole según sea necesario
       const filter = { _id: uid }; // Filtro para encontrar el documento a actualizar
       const value = { $set: { role: newRole } };
@@ -62,16 +61,12 @@ export const premiumUserChange = async (req, res) => {
       const result = await userService.update(filter, value);
       res.sendSuccess(result);
     }
-     
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .send({
-        error: error,
-        message: 'No se pudo actualizar el rol del usuario actual.',
-      });
-   
+    res.status(500).send({
+      error: error,
+      message: 'No se pudo actualizar el rol del usuario actual.',
+    });
   }
 };
 
@@ -90,6 +85,7 @@ export const adminUser = async (req, res) => {
   }
 };
 
+//user login
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -113,9 +109,9 @@ export const login = async (req, res) => {
       const user = await userService.findByUsername(email);
       if (!user) {
         //console.warn("User doesn't exists with username: " + email);
-        return res.status(202).send({
+        return res.status(401).send({
           error: 'Not found',
-          message: 'Usuario no encontrado con username: ' + email,
+          message: 'Invalid credentials! ' + email,
         });
       }
 
@@ -123,16 +119,18 @@ export const login = async (req, res) => {
         //console.warn("Invalid credentials for user: " + email);
         return res
           .status(401)
-          .send({ status: 'error', error: 'Credenciales inválidas!' });
+          .send({ status: 'error', error: 'Invalid credentials!' });
       }
       // console.log(user)
       tokenUser = {
-        name: `${user.first_name} ${user.last_name}`,
+        name: user.first_name,
+        last_name: user.last_name,
         email: user.email,
         age: user.age,
         role: user.role,
         userId: user._id.toString(),
       };
+      updatelastconnection(user._id.toString());
     }
 
     const access_token = generateJWToken(tokenUser);
@@ -161,6 +159,7 @@ export const register = async (req, res) => {
     console.log(newUser);
     newUser.password = createHash(req.body.password);
     newUser.loggedBy = 'form';
+    newUser.role = 'user';
     const userExist = await userService.findByUsername(newUser.email);
     if (userExist) {
       //el usuario ya existe
@@ -179,7 +178,10 @@ export const register = async (req, res) => {
   }
 };
 
-export const save = async (req, res) => {};
+export const save = async (req, res) => {
+  const result = userService.save(req.user);
+  return result;
+};
 
 export const findByTitle = async (req, res) => {
   try {
@@ -207,30 +209,69 @@ export const findById = async (req, res) => {
         error: 'El Usuario No Existe',
       });
     }
-    res.json({
-      result,
-    });
+    return result;
   } catch (error) {
     return error;
   }
 };
 
-// //Send Link to password Reset
-// export const sendLinkToPasswordReset = async (req, res) => {
-//   try {
-//     const {email} = req.body
-//     if (!email){
-//         return res.status(400).send({message:'Email must be provided'})
-//     }
-//     const token = v4()
-//     console.log(token)
-//     res.send('send link to password reset');
-//   } catch (error) {
-//     res
-//       .status(500)
-//       .send({
-//         error: error.message,
-//         message: `Could not send email to the next recipient {}`,
-//       });
-//   }
+export const logout = async (req, res) => {
+  if (req.user) {
+    updatelastconnection(req.user.userId);
+    res.clearCookie('jwtCookieToken');
+    res.redirect('/');
+  }
+};
+//
+const updatelastconnection = async function (id) {
+  const user = await userService.findById(id);
+  // console.log(1, user);
+  if (!user) {
+    return res.send('Usuario no existe');
+  }
+  try {
+    user.last_connection = new Date();
+    const result = await userService.save(user);
+    res.status(201).send(result);
+  } catch (error) {
+    return false;
+  }
+};
+
+export const updateDocument = async (req, res) => {
+  try {
+    const pid = req.pid;
+    // console.log(req.user)
+    // if (req.user.role!=="admin"){
+    //     //Verificar que el woner concida con el req.user.email
+    //     let product = await productService.findById(pid)
+    //     if (product.owner !== req.user.email){
+    //         throw new Error("El producto no puede ser modificado por este usuario")
+    //     }
+    // }
+    let newDoc = data.newDocument;
+    let result = await userService.update({ _id: pid, newDoc });
+    res.status(201).send(result);
+  } catch (error) {
+    res.status(500).send({
+      error: 'No se pudo Actualizar el producto.',
+      message: error.message,
+    });
+  }
+};
+
+//Controlador para almacenar el archivo
+// export const uploadFiles = async function (req, res) {
+//   const uid = req.params.uid;
+//   const formData = req.body;
+//   const profileFile = req.file;
+//   const destination = req.body.destination;
+
+//   console.log(0, uid);
+//   console.log(1, formData);
+
+//   console.log('Archivo:', profileFile);
+//   console.log('Destino:', destination);
+//   // console.log(2, req.file);
+//   res.status(201).send({ error: 'listo' });
 // };

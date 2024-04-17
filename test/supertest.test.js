@@ -199,12 +199,12 @@ describe('Testing ecommerce', () => {
         .post('/api/products')
         .set('Cookie', [`${this.cookie.name}=${this.cookie.value}`])
         .send(data);
-      console.log("**** body")
-      console.log(_body)
+      console.log('**** body');
+      console.log(_body);
       this.product_id = _body._id;
-      this.product_id
-    //   console.log('**** Product_id')
-    //   console.log(this.product_id)
+      this.product_id;
+      //   console.log('**** Product_id')
+      //   console.log(this.product_id)
       //const result = await requester.post('/api/products').send(data)
       //assert
       expect(statusCode).is.eqls(201);
@@ -274,8 +274,8 @@ describe('Testing ecommerce', () => {
           },
         ],
         user: {
-            email: this.mockUser.email
-        }
+          email: this.mockUser.email,
+        },
       };
       //Then
       const result = await requester
@@ -292,8 +292,8 @@ describe('Testing ecommerce', () => {
       expect(this.cookie.value).to.be.ok;
 
       //Assert
-      console.log("****  new cart")
-      console.log(newCart)
+      console.log('****  new cart');
+      console.log(newCart);
       const { statusCode, ok, _body } = await requester
         .post('/api/carts')
         .set('Cookie', [`${this.cookie.name}=${this.cookie.value}`])

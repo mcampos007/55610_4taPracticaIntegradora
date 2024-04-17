@@ -1,5 +1,5 @@
 paths:
-  /api/extend/users/login:
+  /api/users/login:
     post:
       tags:
         - Users
@@ -19,24 +19,18 @@ paths:
                   type: string
               $ref: '#components/schemas/User'
       responses:
-        "200":
+        '200':
           description: successfull operation
-          content:
-          application/json:
-          schema:
-          type: array
-          items:
-          $ref: '#/components/schemas/Product'
-        "401":
-          description: 'Token missing, Unauthorized!'
-        "500":
+        '401':
+          description: 'Invalid credentials!'
+        '500':
           description: 'Error interno del servidor, usualmente generado por una query defectuosa o un fallo de conexion con la base de datos'
-  /api/extend/users/register:
+  /api/users/register:
     post:
       tags:
         - Users
       summary: Register new user
-      description:  Register a new user
+      description: Register a new user
       operationId: Register
       requestBody:
         description: Register a new User
@@ -45,7 +39,7 @@ paths:
             schema:
               type: object
               properties:
-                first_name: 
+                first_name:
                   type: string
                   required: true
                   example: mario
@@ -69,7 +63,7 @@ paths:
                 cart:
                   type: string
                   ref: 'Cart'
-                  example: 
+                  example:
                 loggedBy:
                   type: string
                   required: false
@@ -80,17 +74,11 @@ paths:
                   example: 'user'
               $ref: '#components/schemas/User'
       responses:
-        "200":
-          description: successfull operation
-          content:
-          application/json:
-          schema:
-          type: array
-          items:
-          $ref: '#/components/schemas/Product'
-        "401":
+        '201':
+          description: 'successfull operation'
+        '400':
           description: 'Token missing, Unauthorized!'
-        "500":
+        '500':
           description: 'Error interno del servidor, usualmente generado por una query defectuosa o un fallo de conexion con la base de datos'
 components:
   schemas:
@@ -124,9 +112,8 @@ components:
         _id: ObjectId('65bc03555e6d3728b6ccadd6')
         first_name: test
         last_name: test
-        email: test@test
+        email: usuario@usuario
         age: 57
-        password: 123qwe
-        confirmpassword: 123qwe
+        password: 2123qwe
         loggedBy: form
         role: user

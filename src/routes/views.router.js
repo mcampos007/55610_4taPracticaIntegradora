@@ -90,17 +90,17 @@ export default class ViewsRouter extends CustomRouter {
 
     // Ver Perfil
     this.get('/profile', ['USER', 'ADMIN', 'PREMIUM'], async (req, res) => {
-      // console.log(req.user);
+      console.log(req.user);
       const data = req.user;
-      let isAdmin=false;
+      let isAdmin = false;
       let isPremium = false;
       let isUser = false;
       if (req.user.role === 'admin') isAdmin = true;
       if (req.user.role === 'premium') isPremium = true;
       if (req.user.role === 'user') isUser = true;
-      data.bodyClass = 'signup-page'
+      data.bodyClass = 'signup-page';
       data.username = req.user.name;
-      console.log(data)
+      console.log(data);
       //data.role: req.user.role,
       data.isAdmin = isAdmin;
       data.isPremium = isPremium;
@@ -127,28 +127,28 @@ export default class ViewsRouter extends CustomRouter {
     // chage role
 
     // Link to password Reset
-    this.get('/linkpasswordreset',['PUBLIC'],   (req, res) =>{
+    this.get('/linkpasswordreset', ['PUBLIC'], (req, res) => {
       const data = {
         title: 'Link to Password-reset',
-        bodyClass: 'signup-page' // Puedes cambiar esto dinámicamente según tus necesidades  
+        bodyClass: 'signup-page', // Puedes cambiar esto dinámicamente según tus necesidades
       };
-      console.log(data)
+      console.log(data);
       res.render('users/requestpasswordresetlink', data);
-    })
+    });
 
     // Reasignación de Password
-    this.get('/passwordreset/:token', ['PUBLIC'],(req, res) => {
-      const {token} = req.params
+    this.get('/passwordreset/:token', ['PUBLIC'], (req, res) => {
+      const { token } = req.params;
       const data = {
         title: 'Password-reset',
         bodyClass: 'signup-page', // Puedes cambiar esto dinámicamente según tus necesidades
-        token:token
+        token: token,
       };
       res.render('users/passwordreset', data);
     });
 
     //  Regiter
-    this.get('/register', ['PUBLIC'],(req, res) => {
+    this.get('/register', ['PUBLIC'], (req, res) => {
       const data = {
         title: 'Register-page',
         bodyClass: 'signup-page', // Puedes cambiar esto dinámicamente según tus necesidades

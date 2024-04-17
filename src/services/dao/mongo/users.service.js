@@ -47,6 +47,12 @@ export default class UserDao {
     let result = this.findById(id);
     return result;
   };
+
+  uploadDocuments = async (id, files) => {
+    console.log(2, 'Lllegue al servicio');
+    console.log(id);
+    return 'volvi';
+  };
 }
 
 //export default new UserDao();

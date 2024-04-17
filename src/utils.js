@@ -1,26 +1,32 @@
-import {fileURLToPath} from 'url';
+import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { log } from 'console';
-import config from "./config/config.js";
+import config from './config/config.js';
 import passport from 'passport';
 import { faker } from '@faker-js/faker';
-
+import multer from 'multer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const categories = ["category_1", "category_2", "category_3", "category_4", "category_3"];
-
+const categories = [
+  'category_1',
+  'category_2',
+  'category_3',
+  'category_4',
+  'category_3',
+];
 
 // Generamos el hash
-export const createHash = password => bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+export const createHash = (password) =>
+  bcrypt.hashSync(password, bcrypt.genSaltSync(10));
 
 // Validamos el hash
 export const isValidPassword = (user, password) => {
-    //console.log(`Datos a validar: user-password: ${user.password}, password: ${password}`);
-    return bcrypt.compareSync(password, user.password);
-}
+  //console.log(`Datos a validar: user-password: ${user.password}, password: ${password}`);
+  return bcrypt.compareSync(password, user.password);
+};
 
 const PRIVATE_KEY = config.privatekey;
 
@@ -36,88 +42,129 @@ const PRIVATE_KEY = config.privatekey;
  * Tercer argumento: Tiempo de expiración del token.
  */
 export const generateJWToken = (user) => {
-    return jwt.sign({ user }, PRIVATE_KEY, { expiresIn: '3600s' })
-}
-
+  return jwt.sign({ user }, PRIVATE_KEY, { expiresIn: '3600s' });
+};
 
 // authToken
 export const authToken = (req, res, next) => {
-    //El JWT token se guarda en los headers de autorización.
-    const authHeader = req.headers.authorization;
-   // console.log("Token present in header auth:");
+  //El JWT token se guarda en los headers de autorización.
+  const authHeader = req.headers.authorization;
+  // console.log("Token present in header auth:");
   //  console.log(authHeader);
 
-    if (!authHeader) {
-        return res.status(401).send({ error: "User not authenticated or missing token." });
-    }
+  if (!authHeader) {
+    return res
+      .status(401)
+      .send({ error: 'User not authenticated or missing token.' });
+  }
 
-    const token = authHeader.split(' ')[1]; //Se hace el split para retirar la palabra "Bearer asdfase56234234923".
-    //Validar token
-    jwt.verify(token, PRIVATE_KEY, (error, credentials) => {
-        if (error) {
-           /*  console.log('Error en token');
+  const token = authHeader.split(' ')[1]; //Se hace el split para retirar la palabra "Bearer asdfase56234234923".
+  //Validar token
+  jwt.verify(token, PRIVATE_KEY, (error, credentials) => {
+    if (error) {
+      /*  console.log('Error en token');
             console.log(error); */
 
-            return res.status(403).send({ error: "Token invalid, Unauthorized!" });
-        }
-        //Token OK
-        req.user = credentials.user;
-        //console.log(req.user);
-        next();
-    })
-}
+      return res.status(403).send({ error: 'Token invalid, Unauthorized!' });
+    }
+    //Token OK
+    req.user = credentials.user;
+    //console.log(req.user);
+    next();
+  });
+};
 
 // para manejo de errores
 export const passportCall = (strategy) => {
-    return async (req, res, next) => {
-         console.log("Entrando a llamar strategy: ");
-        console.log(strategy); 
-        
-        passport.authenticate(strategy, function (err, user, info) {
-            console.log("inGRESANDO A AUTENTICATE")
-            if (err) return next(err);
-            if (!user) {
-                return res.status(401).send({ error: info.messages ? info.messages : info.toString() });
-            }
-          //  console.log("Usuario obtenido del strategy: ");
-           // console.log(user);
-            req.user = user;
-            next();
-        })(req, res, next);
-    }
+  return async (req, res, next) => {
+    console.log('Entrando a llamar strategy: ');
+    console.log(strategy);
+
+    passport.authenticate(strategy, function (err, user, info) {
+      console.log('inGRESANDO A AUTENTICATE');
+      if (err) return next(err);
+      if (!user) {
+        return res
+          .status(401)
+          .send({ error: info.messages ? info.messages : info.toString() });
+      }
+      //  console.log("Usuario obtenido del strategy: ");
+      // console.log(user);
+      req.user = user;
+      next();
+    })(req, res, next);
+  };
 };
 
 // para manejo de Auth
 export const authorization = (role) => {
-    return async (req, res, next) => {
-       // console.log(role);
-        if (!req.user) return res.status(401).send("Unauthorized: User not found in JWT")
+  return async (req, res, next) => {
+    // console.log(role);
+    if (!req.user)
+      return res.status(401).send('Unauthorized: User not found in JWT');
 
-        if (req.user.role !== role) {
-            return res.status(403).send("Forbidden: El usuario no tiene permisos con este rol.");
-        }
-        next()
+    if (req.user.role !== role) {
+      return res
+        .status(403)
+        .send('Forbidden: El usuario no tiene permisos con este rol.');
     }
+    next();
+  };
 };
 
 //Generacion de productos
 export const generateProduct = (index) => {
-    const randomCategory = faker.helpers.arrayElement(categories);
+  const randomCategory = faker.helpers.arrayElement(categories);
 
-    return {
-        title: faker.commerce.productName(),
-        description:faker.commerce.productDescription(),
-        code:`P-${String(index).padStart(8, '0')}`,
-        price: faker.commerce.price(),
-        status:true,
-        category:randomCategory,
-        stock: Number(faker.number.bigInt({ min: 10n, max: 100n })),
-      // id: faker.database.mongodbObjectId(),
-        thumbnail: Array.from({ length: 3 }, () => faker.image.url())
-    }
+  return {
+    title: faker.commerce.productName(),
+    description: faker.commerce.productDescription(),
+    code: `P-${String(index).padStart(8, '0')}`,
+    price: faker.commerce.price(),
+    status: true,
+    category: randomCategory,
+    stock: Number(faker.number.bigInt({ min: 10n, max: 100n })),
+    // id: faker.database.mongodbObjectId(),
+    thumbnail: Array.from({ length: 3 }, () => faker.image.url()),
+  };
 };
-export default __dirname;
 
+// // Configuracion MULTER
+// const storage = multer.diskStorage({
+//   // ubicaion del directorio donde voy a guardar los archivos
+//   destination: function (req, file, cb) {
+//     console.log(1, req.bpdy);
+//     console.log(2, file);
+//     let uploadFolder = 'public/images'; // Carpeta predeterminada
+//     // Verificar el tipo de archivo y ajustar la carpeta de carga
+//     if (req.body.profileImage) {
+//       uploadFolder = 'public/profiles';
+//     } else if (req.body.productImage) {
+//       uploadFolder = 'public/products';
+//     } else if (req.body.document) {
+//       uploadFolder = 'public/documents';
+//     }
+//     console.log(3, uploadFolder);
+//     cb(null, `${__dirname}/${uploadFolder}`);
+//   },
+
+//   // el nombre que quiero que tengan los archivos que voy a subir
+//   filename: function (req, file, cb) {
+//     // console.log(file);
+//     cb(null, `${Date.now()}-${file.originalname}`);
+//   },
+// });
+
+// export const uploader = multer({
+//   storage,
+//   // si se genera algun error, lo capturamos
+//   onError: function (err, next) {
+//     console.log(err);
+//     next();
+//   },
+// });
+
+export default __dirname;
 
 /*
  
