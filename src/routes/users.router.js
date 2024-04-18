@@ -13,7 +13,7 @@ import {
   updateDocument,
   //sendLinkToPasswordReset,
 } from '../controllers/users.controller.js';
-import { uploadFiles } from '../helpers/multer.js';
+import { uploadFiles, uploadDocuments } from '../helpers/multer.js';
 export default class UsersExtendRouter extends CustomRouter {
   init() {
     /*====================================================
@@ -38,6 +38,94 @@ export default class UsersExtendRouter extends CustomRouter {
 
     this.post(
       '/:uid/documents',
+      ['USER', 'PREMIUM', 'ADMIN'],
+      uploadDocuments.array('document'),
+      async (req, res) => {
+        console.log(1, req.files);
+        console.log(111, req.body);
+        const tipofile = req.body.tipofile;
+        try {
+          if (!req.files) {
+            return res
+              .status(400)
+              .send({ status: 'error', mensaje: 'No se adjunto archivo.' });
+          }
+
+          const { uid } = req.params;
+          let cantFiles = 0;
+          // console.log(2, uid);
+          const filesArray = req.files; // Suponiendo que req.files es tu array de archivos
+
+          for (const file of filesArray) {
+            try {
+              const user = await findById(req, res);
+              if (user) {
+                const name = tipofile; //file.filename;
+                const reference = `public/images/documents/${file.filename}`;
+
+                const newDocument = {
+                  name: file.filename,
+                  reference: reference,
+                };
+
+                if (!user.documents) {
+                  user.documents = [];
+                }
+
+                user.documents.push(newDocument);
+                const status = `Se han subido ${cantFiles + 1} de Documentos`;
+
+                const data = {
+                  uid: uid,
+                  newDocument: newDocument,
+                  status: status,
+                };
+                const result = await updateDocument(data, res);
+                console.log(result);
+
+                cantFiles++;
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              // Manejar el error como sea necesario
+            }
+          }
+          // Actualizar el status del usuario indicando que se han subido x imagens de profile
+
+          res.send({
+            status: 'ok',
+            message: 'Archivos subidos satisafactoriamente',
+            filesUpload: cantFiles,
+          });
+
+          //
+          //
+          //   // Crear un nuevo documento con la información obtenida
+          //
+          //   // Agregar el nuevo documento al arreglo 'documents' del usuario
+          //
+
+          //   console.log(user);
+
+          //   // Guardar los cambios en la base de datos utilizando el controlador de usuario
+          //
+          //   console.log('volvi');
+          // console.log(result);
+          //res.send({ status: 'OK' });
+          //}
+          //// quiero agregar informacion a la coleccionde usuarios
+          // res
+          //   .status(200)
+          //   .send({ status: 'ok', mensaje: 'Avatar subido satisfactoriamente' });
+        } catch (error) {
+          console.log(error);
+          res.send(error);
+        }
+      }
+    );
+
+    this.post(
+      '/:uid/profile',
       ['USER', 'PREMIUM', 'ADMIN'],
       uploadFiles.array('profile'),
       async (req, res) => {

@@ -239,17 +239,17 @@ const updatelastconnection = async function (id) {
 };
 
 export const updateDocument = async (data, res) => {
-  console.log(7, data);
+  // console.log(7, data);
   try {
     const uid = data.uid;
-    console.log(71, uid);
+    // console.log(71, uid);
     const user = await userService.findById(uid);
-    console.log(8, user);
+    // console.log(8, user);
     user.documents.push(data.newDocument);
     user.status = data.status;
-    console.log(9, user);
+    // console.log(9, user);
     let result = await userService.update({ _id: uid }, user);
-    console.log(10, result);
+    // console.log(10, result);
     return result;
   } catch (error) {
     res.status(500).send({

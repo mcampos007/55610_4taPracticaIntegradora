@@ -19,14 +19,14 @@ export default class UserDao {
   };
 
   findById = async (id) => {
-    console.log(81, id);
+    // console.log(81, id);
     let result = await userModel.findById(id);
     return result;
   };
 
   update = async (filter, value) => {
-    console.log(92, filter);
-    console.log(93, value);
+    // console.log(92, filter);
+    // console.log(93, value);
 
     let result = await userModel.updateOne(filter, value);
     // console.log(result)
