@@ -37,39 +37,66 @@ export default class UsersExtendRouter extends CustomRouter {
     this.get('/adminUser', ['ADMIN'], adminUser);
 
     this.post(
-      '/:pid/documents',
+      '/:uid/documents',
       ['USER', 'PREMIUM', 'ADMIN'],
-      uploadFiles.single('profile'),
+      uploadFiles.array('profile'),
       async (req, res) => {
+        console.log(1, req.files);
         try {
-          if (!req.file) {
+          if (!req.files) {
             return res
               .status(400)
               .send({ status: 'error', mensaje: 'No se adjunto archivo.' });
           }
 
-          const { pid } = req.params;
+          const { uid } = req.params;
+          let cantFiles = 0;
+          // console.log(2, uid);
+          const filesArray = req.files; // Suponiendo que req.files es tu array de archivos
 
-          const user = await findById(req, res);
-          if (user) {
-            const { filename: name, path: reference } = req.file;
-            const newDocument = {
-              name: name,
-              reference: reference,
-            };
+          for (const file of filesArray) {
+            try {
+              const user = await findById(req, res);
+              if (user) {
+                const name = file.filename;
+                const reference = `public/images/profiles/${name}`;
 
-            if (!user.documents) {
-              user.documents = [];
+                const newDocument = {
+                  name: name,
+                  reference: reference,
+                };
+
+                if (!user.documents) {
+                  user.documents = [];
+                }
+
+                user.documents.push(newDocument);
+                const status = `Se han subido ${
+                  cantFiles + 1
+                } de imágenes de perfil`;
+
+                const data = {
+                  uid: uid,
+                  newDocument: newDocument,
+                  status: status,
+                };
+                const result = await updateDocument(data, res);
+                console.log(result);
+
+                cantFiles++;
+              }
+            } catch (error) {
+              console.error('Error:', error);
+              // Manejar el error como sea necesario
             }
-            console.log(user);
-            console.log(req.user);
-
-            user.documents.push(newDocument);
-            const data = { pid: pid, newDocument: newDocument };
-            const result = await updateDocument(data, res);
-            //console.log(result);
-            res.send(result);
           }
+          // Actualizar el status del usuario indicando que se han subido x imagens de profile
+
+          res.send({
+            status: 'ok',
+            message: 'Archivos subidos satisafactoriamente',
+            filesUpload: cantFiles,
+          });
 
           //
           //

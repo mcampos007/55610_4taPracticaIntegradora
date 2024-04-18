@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     // console.log(file);
     let extension = file.originalname.slice(file.originalname.lastIndexOf('.'));
-    cb(null, `profile-${Date.now()}-${extension}`);
+    cb(null, `profile-${Date.now()}${extension}`);
   },
 });
 

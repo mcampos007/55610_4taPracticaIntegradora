@@ -42,12 +42,15 @@ const userSchema = new Schema({
   documents: [
     {
       name: { type: String },
-      refrence: { type: String },
+      reference: { type: String },
     },
   ],
   last_connection: {
     type: Date, // Tipo de dato para almacenar fecha y hora
     required: false,
+  },
+  status: {
+    type: String,
   },
 });
 

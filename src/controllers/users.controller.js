@@ -202,8 +202,8 @@ export const findByTitle = async (req, res) => {
 
 export const findById = async (req, res) => {
   try {
-    let { pid } = req.params;
-    const result = await userService.findById(pid);
+    let { uid } = req.params;
+    const result = await userService.findById(uid);
     if (!result) {
       return res.json({
         error: 'El Usuario No Existe',
@@ -238,23 +238,22 @@ const updatelastconnection = async function (id) {
   }
 };
 
-export const updateDocument = async (req, res) => {
+export const updateDocument = async (data, res) => {
+  console.log(7, data);
   try {
-    const pid = req.pid;
-    // console.log(req.user)
-    // if (req.user.role!=="admin"){
-    //     //Verificar que el woner concida con el req.user.email
-    //     let product = await productService.findById(pid)
-    //     if (product.owner !== req.user.email){
-    //         throw new Error("El producto no puede ser modificado por este usuario")
-    //     }
-    // }
-    let newDoc = data.newDocument;
-    let result = await userService.update({ _id: pid, newDoc });
-    res.status(201).send(result);
+    const uid = data.uid;
+    console.log(71, uid);
+    const user = await userService.findById(uid);
+    console.log(8, user);
+    user.documents.push(data.newDocument);
+    user.status = data.status;
+    console.log(9, user);
+    let result = await userService.update({ _id: uid }, user);
+    console.log(10, result);
+    return result;
   } catch (error) {
     res.status(500).send({
-      error: 'No se pudo Actualizar el producto.',
+      error: 'No se pudo Actualizar el usuario.',
       message: error.message,
     });
   }
