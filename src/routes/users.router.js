@@ -41,8 +41,8 @@ export default class UsersExtendRouter extends CustomRouter {
       ['USER', 'PREMIUM', 'ADMIN'],
       uploadDocuments.array('document'),
       async (req, res) => {
-        console.log(1, req.files);
-        console.log(111, req.body);
+        // console.log(1, req.files);
+        // console.log(111, req.body);
         const tipofile = req.body.tipofile;
         try {
           if (!req.files) {
@@ -64,7 +64,7 @@ export default class UsersExtendRouter extends CustomRouter {
                 const reference = `public/images/documents/${file.filename}`;
 
                 const newDocument = {
-                  name: file.filename,
+                  name: tipofile,
                   reference: reference,
                 };
 
@@ -146,7 +146,7 @@ export default class UsersExtendRouter extends CustomRouter {
             try {
               const user = await findById(req, res);
               if (user) {
-                const name = file.filename;
+                const name = file.fieldname;
                 const reference = `public/images/profiles/${name}`;
 
                 const newDocument = {

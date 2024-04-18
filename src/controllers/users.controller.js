@@ -39,6 +39,7 @@ export const premiumUserChange = async (req, res) => {
     const { uid } = req.params;
     let user = await userService.findById(uid);
     user = new UsertDTO(user);
+    console.log(1, user);
     if (user.role === 'user' || user.role === 'premium') {
       // Si el valor original de user.role es "user", asignamos "premium" a la nueva variable role
       // Si el valor original de user.role es "premium", asignamos "user" a la nueva variable role
