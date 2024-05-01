@@ -39,31 +39,52 @@ export const premiumUserChange = async (req, res) => {
     const { uid } = req.params;
     let user = await userService.findById(uid);
     user = new UsertDTO(user);
-    console.log(1, user);
-    if (user.role === 'user' || user.role === 'premium') {
-      // Si el valor original de user.role es "user", asignamos "premium" a la nueva variable role
-      // Si el valor original de user.role es "premium", asignamos "user" a la nueva variable role
-      // if (user.role==="user"){
-      //   user.role = "premium"
-      // }{
-      //   user.role="user"
-      // }
-      const newRole =
-        user.role === 'user'
-          ? 'premium'
-          : user.role === 'premium'
-          ? 'user'
-          : user.role;
+    // console.log(1, user);
 
-      // Ahora puedes utilizar la variable newRole según sea necesario
-      const filter = { _id: uid }; // Filtro para encontrar el documento a actualizar
-      const value = { $set: { role: newRole } };
-      //console.log(user)
-      const result = await userService.update(filter, value);
-      res.sendSuccess(result);
+    if (user.role === 'user' || user.role === 'premium') {
+      let autorizarChange = true;
+      if (user.role === 'premium') autorizarChange = true;
+      if (user.role === 'user') {
+        const requiredDocuments = [
+          'Identificacion',
+          'Comprobante de domicilio',
+          'Comprobante de estado de cuenta',
+        ]; // Documentos requeridos
+        for (const documentName of requiredDocuments) {
+          const documentExists = user.documents.some(
+            (document) => document.name === documentName
+          );
+          // console.log(1, documentExists);
+          // console.log(documentName);
+          if (!documentExists) {
+            autorizarChange = false;
+            break; // No es necesario seguir buscando si falta uno de los documentos
+          }
+        }
+      }
+      // console.log(2, autorizarChange);
+      if (autorizarChange) {
+        const newRole =
+          user.role === 'user'
+            ? 'premium'
+            : user.role === 'premium'
+            ? 'user'
+            : user.role;
+
+        // Ahora puedes utilizar la variable newRole según sea necesario
+        const filter = { _id: uid }; // Filtro para encontrar el documento a actualizar
+        const value = { $set: { role: newRole } };
+        //console.log(user)
+        const result = await userService.update(filter, value);
+        res.sendSuccess(result);
+      } else {
+        res.status(500).send({
+          error: 'No esta autorizado a cambiar le perfil del usuario',
+        });
+      }
     }
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).send({
       error: error,
       message: 'No se pudo actualizar el rol del usuario actual.',

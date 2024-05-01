@@ -55,14 +55,20 @@ export default class ViewsRouter extends CustomRouter {
 
     //Logout
     this.get('/logout', ['USER', 'ADMIN', 'PREMIUM'], (req, res) => {
-      req.session.destroy((err) => {
-        if (!err) {
-          // res.send('Logoutok!');
-          res.redirect('/');
-        } else {
-          res.send({ ststus: 'Logout error', body: err });
-        }
-      });
+      res.clearCookie('jwtCookieToken');
+      // Enviar una respuesta al cliente
+
+      res.status(200).send('Sesión cerrada correctamente');
+
+      res.redirect('/');
+      // req.session.destroy((err) => {
+      //   if (!err) {
+      //     // res.send('Logoutok!');
+      //     res.redirect('/');
+      //   } else {
+      //     res.send({ ststus: 'Logout error', body: err });
+      //   }
+      // });
     });
 
     //Home

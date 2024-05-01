@@ -14,17 +14,16 @@ const productSchema = new Schema({
   thumbnail: {
     type: [String],
   },
-    owner: {
-      type: String, // Cambiado de ObjectId a String
-      required: true,
-      default: 'admin'
-    },
-  
+  owner: {
+    type: String, // Cambiado de ObjectId a String
+    required: true,
+    default: 'admin',
+  },
 });
 productSchema.plugin(mongoosePaginate);
-/* productSchema.pre('find', function(){
-    this.populate('products' );
-}) */
+// productSchema.pre('find', function () {
+//   this.populate('products');
+// });
 
 const productModel = model(productCollection, productSchema);
 

@@ -25,14 +25,17 @@ export default class ProductsRouter extends CustomRouter {
     // Recuperar un producto por ID
     this.get('/:pid', ['PUBLIC'], findById);
 
-    //REgistrar Producto
-    this.post('/', ['ADMIN',"PREMIUM"], save);
+    // Recuperar un producto por titulo
+    this.get('/title/:title', ['PUBLIC'], findByTitle);
+
+    //Registrar Producto
+    this.post('/', ['ADMIN', 'PREMIUM'], save);
 
     //Updte Product
-    this.put('/:pid', ['ADMIN','PREMIUM'], update);
+    this.put('/:pid', ['ADMIN', 'PREMIUM'], update);
 
     //Delete Product
-    this.delete('/:pid', ['ADMIN','PREMIUM'], deleteProduct);
+    this.delete('/:pid', ['ADMIN', 'PREMIUM'], deleteProduct);
 
     //MockingProducts
     this.get('/mocking/products', ['PUBLIC'], getProducts);

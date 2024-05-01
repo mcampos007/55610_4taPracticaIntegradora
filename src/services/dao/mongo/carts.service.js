@@ -1,82 +1,107 @@
-import  cartModel from "../../db/models/carts.model.js";
-import mongoose, { Mongoose, Types  } from 'mongoose';
+import { ObjectId } from 'mongodb';
+import cartModel from '../../db/models/carts.model.js';
 
 export default class CartDao {
-    constructor(){
-        // console.log("Calling carts model a servise");
-    }
+  constructor() {
+    // console.log("Calling carts model a servise");
+  }
 
-    getAll = async() => {
-        let carts = await cartModel.find();
-        return carts
+  save = async (cart) => {
+    let result = await cartModel.create(cart);
+    return result;
+  };
+
+  findById = async (id) => {
+    //const result = await cartModel.findById(id);
+    const result = await cartModel.findById(id).populate('products.product');
+    return result;
+  };
+
+  addProductToCart = async (cart, id) => {
+    const nuevoProducto = {
+      product: id,
+      quantity: 1,
     };
+    const productToFind = new ObjectId(id);
 
-    save = async(cart) => {
-        let result = await cartModel.create(cart);
-        return result;
-    }
- 
-    addProductToCart = async(cart, id) => {
-        const nuevoProducto = {
-            "product": id,
-            "quantity": 1
-        };
-        const indexProductoExistente = cart.products.findIndex(item => item.product.toHexString() ===  id);
-        if (indexProductoExistente !== -1) {
-            // Si el producto ya existe, incrementar la cantidad en 1
-                cart.products[indexProductoExistente].quantity += 1;
-        } else {
-            // Si el producto no existe, agregarlo al array
-                cart.products.push(nuevoProducto);
-        }
-        const cid=cart._id;
-        const result = this.update(cid, cart);
-        return result;
-    }
+    // if (cart.products.length > 0) console.log(2, cart.products[0].product._id);
 
-    deleteProductToCart = async(cart, id) => {
-        const nuevoProducto = {
-            "product": id,
-            "quantity": 1
-        };
-        const indexProductoExistente = cart.products.findIndex(item => item.product.toHexString() ===  id);
-        if (indexProductoExistente !== -1) {
-            // Si el producto ya existe, incrementar la cantidad en 1
-            cart.products[indexProductoExistente].quantity -= 1;
-            // Verificar si la cantidad llega a 0 y eliminar el elemento del array
-            if (cart.products[indexProductoExistente].quantity === 0) {
-                cart.products.splice(indexProductoExistente, 1);
-            }
-        } else {
-            // Si el producto no existe, agregarlo al array
-                cart.products.push(nuevoProducto);
-        }
-        const cid=cart._id;
-        const result = this.update(cid, cart);
-        return result;
-    }
-    deleteCart = async(id) => {
-        let result = await cartModel.findByIdAndDelete(id);
-        return result;
-    }
+    // const indexProductoExistente = cart.products.findIndex(
+    //   //(item) => item.product.toHexString() === id
+    //   (item) => item.product._id === productToFind
+    // );
 
-    update = async(id, cart) => {
-        const result = await cartModel.updateOne({_id: id} , cart);
-        return result;
-    }
+    // const result = indexProductoExistente;
+    const productToUpdate = cart.products.find((product) =>
+      product.product.equals(productToFind)
+    );
 
-    
-
-    findById = async(id) => {
-        const result = await cartModel.findById(id);
-        return result;
+    // console.log(3, productToUpdate);
+    if (productToUpdate) {
+      productToUpdate.quantity += 1;
+    } else {
+      cart.products.push(nuevoProducto);
     }
+    // console.log(cart);
+    // if (indexProductoExistente !== -1) {
+    //   // Si el producto ya existe, incrementar la cantidad en 1
+    //   cart.products[indexProductoExistente].quantity += 1;
+    // } else {
+    //   // Si el producto no existe, agregarlo al array
+    //   cart.products.push(nuevoProducto);
+    // }
+    // const result = cart;
+    const cid = cart._id;
+    const result = this.update(cid, cart);
+    return result;
+  };
 
-    findByUser = async(id) => {
-        const result = await cartModel.findOne({user: id});
-        return result;
+  deleteProductToCart = async (cart, id) => {
+    const nuevoProducto = {
+      product: id,
+      quantity: 1,
+    };
+    const indexProductoExistente = cart.products.findIndex(
+      (item) => item.product.toHexString() === id
+    );
+    if (indexProductoExistente !== -1) {
+      // Si el producto ya existe, decrementar la cantidad en 1
+      cart.products[indexProductoExistente].quantity -= 1;
+      // Verificar si la cantidad llega a 0 y eliminar el elemento del array
+      if (cart.products[indexProductoExistente].quantity === 0) {
+        cart.products.splice(indexProductoExistente, 1);
+      }
+    } else {
+      // Si el producto no existe, agregarlo al array
+      //cart.products.push(nuevoProducto);
     }
-/* 
+    const cid = cart._id;
+    const result = this.update(cid, cart);
+    return result;
+  };
+
+  delete = async (id) => {
+    let result = await cartModel.findByIdAndDelete(id);
+    return result;
+  };
+
+  update = async (id, cart) => {
+    const result = await cartModel.updateOne({ _id: id }, cart);
+    // console.log(result);
+    return result;
+  };
+
+  findByUser = async (id) => {
+    const result = await cartModel.findOne({ user: id });
+    return result;
+  };
+
+  getAll = async () => {
+    let carts = await cartModel.find();
+    return carts;
+  };
+
+  /* 
     
     
     //Eliminar los productos del carrito
@@ -116,8 +141,5 @@ export default class CartDao {
           console.log(result);
           return result;
     }
- */    
-
+ */
 }
-
-

@@ -1,5 +1,5 @@
-//import ProductService from "../services/db/products.service.js";
-//import { productService } from "../services/factory.js";
+import { ObjectId } from 'mongodb';
+import { v4 } from 'uuid';
 import {
   cartService,
   productService,
@@ -39,13 +39,15 @@ const mailOptions = {
   attachments: [],
 };
 
-function makeTicketDetailForEmail(tkobj) {
+function makeTicketDetailForEmail(tk) {
   // Construir la tabla HTML dinámicamente
-  const tableRows = tkobj.products
+
+  const tableRows = tk.products
     .map(
       (product) => `
     <tr>
-    <td>${product.product}</td>
+    <td>${product.product.code}</td>
+    <td>${product.product.title}</td>
     <td>${product.quantity}</td>
     <td>${product.price}</td>
     <td>${product.quantity * product.price}</td>
@@ -54,11 +56,11 @@ function makeTicketDetailForEmail(tkobj) {
     )
     .join('');
 
-  const totalItems = tkobj.products.reduce(
+  const totalItems = tk.products.reduce(
     (acc, product) => acc + product.quantity,
     0
   );
-  const totalAmount = tkobj.products.reduce(
+  const totalAmount = tk.products.reduce(
     (acc, product) => acc + product.quantity * product.price,
     0
   );
@@ -67,6 +69,7 @@ function makeTicketDetailForEmail(tkobj) {
         <table>
             <thead>
             <tr>
+                <th>Code</th>
                 <th>Product</th>
                 <th>Quantity</th>
                 <th>Price</th>
@@ -78,11 +81,11 @@ function makeTicketDetailForEmail(tkobj) {
             </tbody>
             <tfoot>
             <tr>
-                <td colspan="3">Total Items:</td>
+                <td colspan="4">Total Items:</td>
                 <td>${totalItems}</td>
             </tr>
             <tr>
-                <td colspan="3">Total Amount:</td>
+                <td colspan="4">Total Amount:</td>
                 <td>${totalAmount.toFixed(2)}</td>
             </tr>
             </tfoot>
@@ -96,6 +99,272 @@ function makeTicketDetailForEmail(tkobj) {
   return emailContent;
 }
 
+export const save = async (req, res) => {
+  try {
+    // Verificar si hay un cart para el usuario
+    // console.log(1, req.body);
+    const cartExist = await cartService.findByUser(req.user.userId);
+    let result = {};
+    let newCart = {};
+    if (!cartExist) {
+      // Dar de Alta, porque no existe
+
+      if (req.body.products) {
+        newCart = new CartDTO(req.body);
+      }
+
+      // Verificar que sean productos permitidos
+      if (newCart.products) {
+        for (const newProduct of newCart.products) {
+          // Consultar si el producto no pertenece al usuario
+          const isNotOwnerProduct = await productService.findById(
+            newProduct.product
+          );
+
+          if (isNotOwnerProduct.owner === req.user.email) {
+            // Eliminar el elemento del array
+            const index = newCart.products.indexOf(newProduct);
+            newCart.products.splice(index, 1);
+          }
+        }
+      }
+
+      newCart.user = req.user.userId;
+      // if (!newCart.products) {
+      //   newCart.products = [];
+      // }
+      // console.log(1, newCart);
+      result = await cartService.save(newCart);
+    } else {
+      // Iterar sobre los nuevos productos
+      const data = new CartDTO(req.body);
+      for (const newProduct of data.products) {
+        // Verificar si el producto ya existe en el carrito original
+        let existingProductIndex = cartExist.products.findIndex(
+          (product) => product.product.toString() === newProduct.product
+        );
+        // console.log('Verificar que el producto no le perteneza al usuario');
+        // console.log(newProduct);
+        const isNotOwnerProduct = await productService.findById(
+          newProduct.product
+        );
+
+        if (isNotOwnerProduct.owner !== req.user.email) {
+          if (existingProductIndex !== -1) {
+            // Si el producto ya existe, sumar la cantidad
+            cartExist.products[existingProductIndex].quantity +=
+              newProduct.quantity;
+          } else {
+            // Si el producto no existe, agregarlo al carrito original
+            cartExist.products.push(newProduct);
+          }
+        } else {
+          //   console.log('No dar de alta');
+        }
+      }
+      result = await cartService.save(cartExist);
+    }
+
+    res.status(200).send({ status: 'success', payload: result });
+  } catch (error) {
+    res
+      .status(500)
+      .send({ error: error, message: 'No se pudo guardar el Cart.' });
+  }
+};
+
+export const getById = async (req, res) => {
+  const { cid } = req.params;
+  try {
+    const result = await cartService.findById(cid);
+    res.status(200).send({ status: 'success', payload: result.products });
+  } catch (error) {
+    res.status(500).send({
+      error: error,
+      message: 'No se pudo recuperar productos del carrito.',
+    });
+  }
+};
+
+export const addProductToCart = async (req, res) => {
+  try {
+    const { cid, pid } = req.params;
+    let cart = await cartService.findById(cid);
+
+    if (!cart) {
+      res.status(500).send({ message: 'No existe el carrito a actualizar.' });
+    } else {
+      const product = await productService.findById(pid);
+
+      if (!product) {
+        res.status(500).send({ message: 'No existe el producto a agregar.' });
+      } else {
+        if (cart.user.toString() !== req.user.userId) {
+          res
+            .status(500)
+            .send({ message: 'You are not authorized to update the cart.' });
+        } else {
+          let result = await cartService.addProductToCart(cart, pid);
+          res.status(200).send({ status: 'success', payload: result });
+        }
+      }
+    }
+  } catch (error) {
+    // console.log(1, error);
+    res.status(500).send({
+      error: error,
+      message: 'No se pudo actualizar la cantidad del item en el Cart.',
+    });
+  }
+};
+
+export const deleteCart = async (req, res) => {
+  try {
+    let { cid } = req.params;
+    //Recuperar el carrito a vaicias
+    const cart = await cartService.findById(cid);
+    if (!cart) {
+      return res
+        .status(500)
+        .send({ error: 'No se encontro el carrito a vaciar' });
+    }
+    //quitar los producto del carrito
+    cart.products = [];
+
+    //Actualizar el carrito
+    const result = await cartService.update(cid, cart);
+    res.status(200).send({ status: 'success', payload: result });
+
+    //const cartEliminado = await cartsDao.delete
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .send({ error: error, message: 'No se pudo eliminar el carrito.' });
+  }
+};
+
+export const deleteProductToCart = async (req, res) => {
+  try {
+    const { cid, pid } = req.params;
+    let cart = await cartService.findById(cid);
+    if (!cart) {
+      return res
+        .status(500)
+        .send({ message: 'No existe el carrito a actualizar.' });
+    }
+    if (cart.user.toString() !== req.user.userId) {
+      return res
+        .status(500)
+        .send({ message: 'You are not authorized to update the cart.' });
+    }
+    let result = await cartService.deleteProductToCart(cart, pid);
+
+    res.status(200).send({ status: 'success', payload: result });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      error: error,
+      message: 'No se pudo Quitar el producto del carrito!!.',
+    });
+  }
+};
+
+export const updateProductsInCart = async (req, res) => {
+  try {
+    const { cid } = req.params;
+    const products = req.body.products;
+
+    if (!cid) {
+      return res.status(500).send({ mensaje: 'Falta Id del carrito' });
+    }
+
+    if (!products) {
+      return res
+        .status(500)
+        .send({ mensaje: 'Falta array de productos a actualizar' });
+    } else {
+      const hasProductAndQuantity = products.every(
+        (obj) => 'product' in obj && 'quantity' in obj
+      );
+
+      if (!hasProductAndQuantity) {
+        return res.status(500).send({
+          mensaje: 'Error en el formato de los productos a actualizar',
+        });
+      }
+    }
+
+    const cart = await cartService.findById(cid);
+
+    if (!cart) {
+      return res
+        .status(500)
+        .send({ mensaje: 'No existe el carrito que desea actualizar' });
+    }
+    cart.products = products;
+    const result = await cartService.save(cart);
+
+    res.status(200).send({ status: 'success', payload: result });
+  } catch (error) {
+    res.status(500).send({ error: error });
+  }
+};
+
+export const updateQuantityProduct = async (req, res) => {
+  try {
+    const { cid, pid } = req.params;
+    if (!cid && !pid) {
+      return res
+        .status(500)
+        .send({ error: 'Faltan Id de carrito y/o Id del producto' });
+    }
+    //Verificar que el carrito exista
+    const cart = await cartService.findById(cid);
+    if (!cart) {
+      return res
+        .status(500)
+        .send({ error: 'No existe el carrito a modificar' });
+    }
+
+    //Verificar que el producto exista
+    const product = await productService.findById(pid);
+    if (!product) {
+      return res
+        .status(500)
+        .send({ error: 'No existe el producto a actualizar' });
+    }
+
+    // Verificar que el body tenga la cantidad
+    const { quantity } = req.body;
+
+    if (!quantity) {
+      return res
+        .status(500)
+        .send({ error: 'No se informó la cantidad a actualizar' });
+    }
+    let productToUpdate = false;
+    const productToFind = new ObjectId(pid);
+    cart.products.forEach((product) => {
+      if (product.product.equals(productToFind)) {
+        product.quantity = quantity;
+        productToUpdate = true;
+      }
+    });
+
+    if (!productToUpdate) {
+      return res
+        .status(500)
+        .send({ error: 'El producto no se encontró en el carrito.' });
+    }
+    const result = await cartService.update(cid, cart);
+
+    res.status(200).send({ status: 'success', payload: result });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ error: error });
+  }
+};
 //getAll, save, , addProductToCart, deleteProductToCart, deleteCart
 
 function obtenerProductoDesdeProducts(productId) {
@@ -117,142 +386,16 @@ export const getAll = async (req, res) => {
   }
 };
 
-export const save = async (req, res) => {
-  try {
-    // Verificar si hay un cart para el usuario
-    
-    console.log(1,req.body)
-    const cartExist = await cartService.findByUser(req.user.userId);
-    let result = {};
-
-    if (!cartExist) {
-      // Dar de Alta, porque no existe
-      const newCart = new CartDTO(req.body);
-      // Verificar que sean productos permitidos
-
-      for (const newProduct of newCart.products) {
-        // Consultar si el producto no pertenece al usuario
-        const isNotOwnerProduct = await productService.findById(
-          newProduct.product
-        );
-
-        if (isNotOwnerProduct.owner === req.user.email) {
-          // Eliminar el elemento del array
-          const index = newCart.products.indexOf(newProduct);
-          newCart.products.splice(index, 1);
-        }
-      }
-      newCart.user = req.user.userId;
-
-      result = await cartService.save(newCart);
-    } else {
-      // Iterar sobre los nuevos productos
-      const data = new CartDTO(req.body);
-      for (const newProduct of data.products) {
-        // Verificar si el producto ya existe en el carrito original
-        let existingProductIndex = cartExist.products.findIndex(
-          (product) => product.product.toString() === newProduct.product
-        );
-        // console.log('Verificar que el producto no le perteneza al usuario');
-        // console.log(newProduct);
-        const isNotOwnerProduct = await productService.findById(
-          newProduct.product
-        );
-        
-        if (isNotOwnerProduct.owner !== req.user.email) {
-          if (existingProductIndex !== -1) {
-            // Si el producto ya existe, sumar la cantidad
-            cartExist.products[existingProductIndex].quantity +=
-              newProduct.quantity;
-          } else {
-            // Si el producto no existe, agregarlo al carrito original
-            cartExist.products.push(newProduct);
-          }
-        } else {
-        //   console.log('No dar de alta');
-        }
-      }
-      result = await cartService.save(cartExist);
-    }
-
-    res.status(201).send(result);
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .send({ error: error, message: 'No se pudo guardar el Cart.' });
-  }
-};
-
-export const addProductToCart = async (req, res) => {
-  try {
-    const { cid, pid } = req.params;
-    let cart = await cartService.findById(cid);
-    if (!cart) {
-      return res
-        .status(500)
-        .send({ message: 'No existe el carrito a actualizar.' });
-    }
-    if (cart.user.toString() !== req.user.userId) {
-      return res
-        .status(500)
-        .send({ message: 'You are not authorized to update the cart.' });
-    }
-    let result = await cartService.addProductToCart(cart, pid);
-    res.status(201).send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({
-      error: error,
-      message: 'No se pudo actualizar la cantidad del item en el Cart.',
-    });
-  }
-};
-
-export const deleteProductToCart = async (req, res) => {
-  try {
-    const { cid, pid } = req.params;
-    let cart = await cartService.findById(cid);
-    if (!cart) {
-      res.status(500).send({ message: 'No existe el carrito a actualizar.' });
-    }
-    if (cart.user.toString() !== req.user.userId) {
-      return res
-        .status(500)
-        .send({ message: 'You are not authorized to update the cart.' });
-    }
-    let result = await cartService.deleteProductToCart(cart, pid);
-    res.status(201).send(result);
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({
-      error: error,
-      message: 'No se pudo actualizar la cantidad del item en el Cart.',
-    });
-  }
-};
-
-export const deleteCart = async (req, res) => {
-  try {
-    let { cid } = req.params;
-    //const cartEliminado = await cartsDao.deleteCart(cid);
-    const result = await cartService.delete(cid);
-    res.status(204).send(result);
-  } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .send({ error: error, message: 'No se pudo eliminar el carrito.' });
-  }
-};
-
 export const purchaseCart = async (req, res) => {
   try {
+    let result = {};
+
     // 1- Recupear el Carrito preparar objeto -> tiketcompra, array -> noprocesados
     const { cid } = req.params;
+
     let cart = await cartService.findById(cid);
     let ticketObj = {
-      code: cid,
+      code: v4(),
       purchaser: req.user.email,
       products: [],
       amount: 0,
@@ -261,19 +404,21 @@ export const purchaseCart = async (req, res) => {
     const updatedProducts = [];
     let ticketAmount = 0;
     const arrayDeProductos = cart.products;
-    console.log('Productos a comprar---->');
-    console.log(arrayDeProductos);
+
     for (const producto of arrayDeProductos) {
       // 2- Recorrer los productos de carrito
-      const productId = producto.product.toString();
+      const productId = producto.product._id.toString();
       const productQuantity = producto.quantity;
+
       let productInProducts = await productService.findById(productId);
 
-      console.log('Item a Comprar y cantidad y stock---->');
-      console.log(productId);
-      console.log(productQuantity);
-      console.log(productInProducts);
-      if (productInProducts && productInProducts.stock >= productQuantity) {
+      // console.log('Item a Comprar y cantidad y stock---->');
+
+      if (
+        productInProducts &&
+        productInProducts.stock >= productQuantity &&
+        productInProducts.price > 0
+      ) {
         // 3-       Verificar si hay stock disponible
         // Agregar al ticketObj si el stock es suficiente
         ticketObj.products.push({
@@ -288,57 +433,61 @@ export const purchaseCart = async (req, res) => {
           productId,
           productInProducts
         ); // 4-              Descontar del stock del producto
-        console.log('REsultado de la baja de Stock ---->');
-        console.log(result);
+        //   console.log('REsultado de la baja de Stock ---->');
+        //   console.log(result);
         ticketAmount += productQuantity * productPrice;
-        console.log('Subtotal -------------->');
-        console.log(productQuantity);
-        console.log(productPrice);
-        console.log(ticketAmount);
+        //   console.log('Subtotal -------------->');
+        //   console.log(productQuantity);
+        //   console.log(productPrice);
+        //   console.log(ticketAmount);
       } else {
-        // Agregar al array de no procesados si el stock no es suficiente
+        //   // Agregar al array de no procesados si el stock no es suficiente
         arrNoProcesados.push(productId);
         updatedProducts.push(producto); // 5-               Agregar el prodcto a  norocesados
       }
     }
+    //Verificar si hay productos a comprar
+    if (ticketObj.products.length === 0) {
+      //No hay productos a compras
+      return res.status(500).send({ error: 'No hay productos a comprar!!!' });
+    }
+
     // 6    Finalizar Compra
     ticketObj.amount += ticketAmount; // 6        Agregar Total Compra
-    console.log('Datos del Ticket para guardar');
-    console.log(ticketObj);
+    //Verificar si hay un importe
+    if (ticketAmount <= 0) {
+      return res.status(500).send({
+        error: 'El total del carrito no puede ser menor o igual a cero!!!',
+      });
+    }
+    // console.log('Datos del Ticket para guardar');
+    // console.log(ticketObj);
     // 6        Agregar Fecha al ticker, se realiza en el modelo
     // 6        Agregar email comprador al tk  se agrega al defnir el objeto
     // 6        Generar codigo unico, se agrega al defnir el objeto al definir el objeto con el id del Cart
     const ticket = await ticketService.save(ticketObj);
     // 6        quitar productos comprados del carrito
     cart.products = updatedProducts;
-    let result = await cartService.update(cid, cart);
+    result = await cartService.update(cid, cart);
 
-    // 6        Retunr noprocesados (id)
-    console.log('Resultado de la actualizacioin del cart');
-    console.log(result);
-    console.log('Envio de mail');
-    console.log('Ticket');
-    console.log(ticket);
-    console.log('Ticket fin');
+    //
+    const tk = await ticketService.findById(ticket._id);
 
     mailOptions.to = ticketObj.purchaser;
     mailOptions.subject = 'Detalle de su compra';
     mailOptions.html = ` <div>
-                                ${makeTicketDetailForEmail(ticket)}
+                                ${makeTicketDetailForEmail(tk)}
                             </div>`;
-    console.log(mailOptions);
 
     let resultMail = transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        console.log(error);
-        res.status(400).send({ message: 'Error', payload: error });
+        return res.status(400).send({ message: 'Error', payload: error });
       } else {
-        console.log('Message sendt: %s', info.messageId);
-        res.send({ message: 'Success', payload: info });
+        return res.send({ message: 'Success', payload: info });
       }
     });
-    console.log(resultMail);
-    const resultemp = {
+    // console.log(1, resultMail);
+    const resultEmail = {
       status: 'Success',
       ticket: ticketObj,
       noProcesados: arrNoProcesados,
@@ -346,7 +495,9 @@ export const purchaseCart = async (req, res) => {
     };
     // Enviar email al comprador
 
-    res.status(201).send(resultemp);
+    res
+      .status(200)
+      .send({ status: 'success', payload: result, payloadEmail: resultMail });
   } catch (error) {
     console.error(error);
     res.status(500).send({
