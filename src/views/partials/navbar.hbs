@@ -11,7 +11,8 @@
     <span class='icon-bar'></span>
     <span class='icon-bar'></span>
   </button>
-  <a class='navbar-brand' href='/'>InfoCam</a>
+  <a class='navbar-brand' href='/'>
+    <img src='/assets/img/logo_axion.png' alt='Logo' height='50px' /></a>
 </div>
 <div class='collapse navbar-collapse' id='navigation-example'>
   <ul class='nav navbar-nav navbar-right'>
@@ -34,9 +35,16 @@
     {{#if username}}
       <li class='dropdown'>
         <div class='col-md-3 dropdown'>
+
           <a href='#' class='btn dropdown-toggle' data-toggle='dropdown'>
             {{username}}
-            <i class='material-icons'>face</i></a>
+            <img
+              src={{avatar}}
+              alt='avatar'
+              height='15px'
+              class='img-circle'
+            /></a>
+
           <ul class='dropdown-menu'>
             {{! //Menú Admin }}
             {{#if isAdmin}}

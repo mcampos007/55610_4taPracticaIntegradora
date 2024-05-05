@@ -55,6 +55,16 @@ export default class UserDao {
     console.log(id);
     return 'volvi';
   };
+
+  getAvatar = async (id) => {
+    // const result = this.findById(id);
+    const result = await userModel.findOne(
+      { _id: id, 'documents.name': 'profile' },
+      { 'documents.$': 1 }
+    );
+    const referencia = result.documents[0].reference;
+    return referencia;
+  };
 }
 
 //export default new UserDao();

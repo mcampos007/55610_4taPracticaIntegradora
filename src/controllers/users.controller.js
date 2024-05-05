@@ -110,7 +110,6 @@ export const adminUser = async (req, res) => {
 //user login
 export const login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     //Validar si es admin
     const userAdmin = config.adminName;
@@ -178,7 +177,7 @@ export const login = async (req, res) => {
 export const register = async (req, res) => {
   try {
     let newUser = new UsertDTO(req.body);
-    console.log(newUser);
+
     newUser.password = createHash(req.body.password);
     newUser.loggedBy = 'form';
     newUser.role = 'user';
@@ -190,10 +189,10 @@ export const register = async (req, res) => {
         .send({ message: 'El usuario ya existe en la base de datos.' });
     } else {
       const result = await userService.save(newUser);
-      res.status(201).send(result);
+      res.status(200).send({ status: 'success', payload: result });
     }
   } catch (error) {
-    console.log(error);
+    // console.log(error);
     res
       .status(500)
       .send({ error: error, message: 'Error al crear el usuario.' });
@@ -281,6 +280,61 @@ export const updateDocument = async (data, res) => {
   }
 };
 
+export const uploadProfile = async (req, res) => {
+  // try {
+  const { uid } = req.params;
+
+  let cantFiles = 0;
+  let payload = {};
+  // console.log(2, uid);
+  const filesArray = req.files; // Suponiendo que req.files es tu array de archivos
+
+  for (const file of filesArray) {
+    const user = await findById(req, res);
+    if (user) {
+      const reference = `images/profiles/${file.filename}`;
+
+      const newDocument = {
+        name: 'profile',
+        reference: reference,
+      };
+
+      if (!user.documents) {
+        user.documents = [];
+      }
+
+      user.documents.push(newDocument);
+      const status = `Se han subido ${cantFiles + 1} de Documentos`;
+
+      const data = {
+        uid: uid,
+        newDocument: newDocument,
+        status: status,
+      };
+      const resultDocument = await updateDocument(data, res);
+      //result = resultDocument;
+
+      cantFiles++;
+      // Actualizar el status del usuario indicando que se han subido x imagens de profile
+      payload.document = newDocument;
+    }
+  }
+  res.status(200).send({ status: 'ok', payload });
+  //} catch (error) {
+  // res.status(500).send({ status: 'No se subieron archivos', payload: error });
+  //}
+};
+
+export const getAvatar = async (uid, res) => {
+  try {
+    // let { uid } = req.params;
+    const avatar = await userService.getAvatar(uid);
+    return avatar;
+  } catch (error) {
+    console.log(error);
+    res.send(error);
+  }
+};
 //Controlador para almacenar el archivo
 // export const uploadFiles = async function (req, res) {
 //   const uid = req.params.uid;

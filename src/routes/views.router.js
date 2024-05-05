@@ -2,25 +2,7 @@ import CustomRouter from './custom/custom.router.js';
 import config from '../config/config.js';
 import axios from 'axios';
 import errorHandler from '../services/errors/middlewares/index.js';
-//import { error } from 'winston';
-/*
-import { Router } from 'express';
-import cookieParser from 'cookie-parser';
-import session from 'express-session';
-//import userModel from "../routes/users.routes.js"
-//import Products from "../routes/products.routes.js"
-//import usersDao from "../services/db/users.service.js";
-//import ProductService from "../services/db/products.service.js";
-import { authToken, passportCall, authorization } from '../utils.js';
-
-import passport from 'passport';
-import axios from 'axios';
-import { current } from '../controllers/users.controller.js';
-
-const router = Router();
-const PRIVATE_KEY = config.privatekey;
-*/
-// Cabiado para el entregable
+import { getAvatar } from '../controllers/users.controller.js';
 
 export default class ViewsRouter extends CustomRouter {
   init() {
@@ -30,7 +12,7 @@ export default class ViewsRouter extends CustomRouter {
       // console.log(req.user);
       const data = {
         // title: 'Signup-page',
-        title: 'Landing-page',
+        title: 'Torolf - Ecommerce',
         bodyClass: 'landing-page style', // Puedes cambiar esto dinámicamente según tus necesidades
       };
       if (!req.user) {
@@ -82,7 +64,7 @@ export default class ViewsRouter extends CustomRouter {
       if (req.user.role === 'user') isUser = true;
       const data = {
         // title: 'Signup-page',
-        title: 'Landing-page',
+        title: 'Home - Page',
         bodyClass: 'landing-page style', // Puedes cambiar esto dinámicamente según tus necesidades
         username: req.user.name,
         role: req.user.role,
@@ -90,13 +72,11 @@ export default class ViewsRouter extends CustomRouter {
         isPremium,
         isUser,
       };
-      console.log(data);
       res.render('home', data);
     });
 
     // Ver Perfil
     this.get('/profile', ['USER', 'ADMIN', 'PREMIUM'], async (req, res) => {
-      console.log(req.user);
       const data = req.user;
       let isAdmin = false;
       let isPremium = false;
@@ -106,11 +86,16 @@ export default class ViewsRouter extends CustomRouter {
       if (req.user.role === 'user') isUser = true;
       data.bodyClass = 'signup-page';
       data.username = req.user.name;
-      console.log(data);
+      // apiUrl = `http://localhost:${config.port}/api/users/${req.user.userId}/avatar`;
+      const avatar = await getAvatar(req.user.userId, res);
+      console.log(1, avatar);
       //data.role: req.user.role,
       data.isAdmin = isAdmin;
       data.isPremium = isPremium;
       data.isUser = isUser;
+      data.avatar = avatar;
+      //Recuerara avatar si tiene
+
       res.render('users/profile', data);
       // try {
       //   const reqData = {

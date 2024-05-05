@@ -33,7 +33,7 @@ const storageDocuments = multer.diskStorage({
 });
 
 export const uploadFiles = multer({
-  storage,
+  storage: storage,
   // si se genera algun error, lo capturamos
   onError: function (err, next) {
     console.log(err);

@@ -17,7 +17,7 @@ form.addEventListener('submit', (e) => {
     },
   })
     .then((result) => {
-      if (result.status === 201) {
+      if (result.status === 200) {
         // Usuario registrado con éxito
         return result.json();
       } else if (
@@ -28,7 +28,7 @@ form.addEventListener('submit', (e) => {
       ) {
         // Manejar errores de registro
         return result.json().then((data) => {
-          console.log('Datos recibidos del servidor:', data);
+          // console.log('Datos recibidos del servidor:', data);
 
           const title = data.error;
           const mensajes = data.message;

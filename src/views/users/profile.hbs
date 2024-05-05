@@ -45,7 +45,7 @@
 							<form class="form" id="profileForm" enctype="multipart/form-data">
 								<input type="hidden" name="destination" id="destination" value="avatar"/>
 								<input type="hidden" name="userId" id="userId" value={{userId}}/>
-								userId
+								
 								<div class="form-row">
 									<div class="form-group col-md-6">
 										<label for="inputEmail4">Nombre</label>
@@ -82,8 +82,10 @@
 									
 							
 								</div>
-								
-								
+								<div class="col-sm-2 col-sm-offset-1">
+									<img src={{avatar}} alt='avatar' height='50px' class="img-circle img-responsive"/>
+								</div>
+								 
 								<div class="form-row">
 									<div class="form-group col-md-6">
 										<label for="profile">Seleciona una Imágen de Perfil</label>

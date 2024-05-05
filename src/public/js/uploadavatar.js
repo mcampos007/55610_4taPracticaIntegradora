@@ -8,16 +8,24 @@ form.addEventListener('submit', function (event) {
   event.preventDefault();
 
   // Obtener los datos del formulario
-  const formData = new FormData();
+
+  const formData = new FormData(form);
+
   const userId = document.getElementById('userId').value;
-  const file = document.getElementById('profile');
+  // const file = [];
+  // file.push(document.getElementById('profile').value);
+  // console.log(file);
 
-  formData.append('userId', userId);
-  formData.append('profile', file);
+  // formData.append('userId', userId);
+  // formData.append('profile', file);
 
-  // console.log(1, userId);
-  // console.log(1, file);
-  const apiUrl = `/api/users/${userId}documents`;
+  // // console.log(1, userId);
+  // // console.log(1, file);
+  // formData.forEach((value, key) => {
+  //   console.log(key, value);
+  // });
+
+  const apiUrl = `/api/users/${userId}avatarprofile`;
 
   console.log(3, apiUrl);
   axios

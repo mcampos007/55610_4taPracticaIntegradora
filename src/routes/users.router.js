@@ -11,9 +11,14 @@ import {
   save,
   findById,
   updateDocument,
+  uploadProfile,
+  getAvatar,
   //sendLinkToPasswordReset,
 } from '../controllers/users.controller.js';
 import { uploadFiles, uploadDocuments } from '../helpers/multer.js';
+
+import multer from 'multer';
+const upload = multer({ dest: '/src/public/images' });
 export default class UsersExtendRouter extends CustomRouter {
   init() {
     /*====================================================
@@ -37,12 +42,19 @@ export default class UsersExtendRouter extends CustomRouter {
     this.get('/adminUser', ['ADMIN'], adminUser);
 
     this.post(
+      '/:uid/avatarprofile',
+      ['USER', 'PREMIUM'],
+      uploadFiles.array('profile'),
+      uploadProfile
+    );
+
+    this.post(
       '/:uid/documents',
       ['USER', 'PREMIUM', 'ADMIN'],
       uploadDocuments.array('document'),
       async (req, res) => {
-        // console.log(1, req.files);
-        // console.log(111, req.body);
+        console.log(1, req.files);
+        console.log(111, req.body);
         const tipofile = req.body.tipofile;
         try {
           if (!req.files) {
@@ -124,92 +136,94 @@ export default class UsersExtendRouter extends CustomRouter {
       }
     );
 
-    this.post(
-      '/:uid/profile',
-      ['USER', 'PREMIUM', 'ADMIN'],
-      uploadFiles.array('profile'),
-      async (req, res) => {
-        console.log(1, req.files);
-        try {
-          if (!req.files) {
-            return res
-              .status(400)
-              .send({ status: 'error', mensaje: 'No se adjunto archivo.' });
-          }
+    this.get('/:uid/avatar', ['USER', 'PREMIUM', 'ADMIN'], getAvatar);
 
-          const { uid } = req.params;
-          let cantFiles = 0;
-          // console.log(2, uid);
-          const filesArray = req.files; // Suponiendo que req.files es tu array de archivos
+    // this.post(
+    //   '/:uid/profile',
+    //   ['USER', 'PREMIUM', 'ADMIN'],
+    //   uploadFiles.array('profile'),
+    //   async (req, res) => {
+    //     console.log(1, req.files);
+    //     try {
+    //       if (!req.files) {
+    //         return res
+    //           .status(400)
+    //           .send({ status: 'error', mensaje: 'No se adjunto archivo.' });
+    //       }
 
-          for (const file of filesArray) {
-            try {
-              const user = await findById(req, res);
-              if (user) {
-                const name = file.fieldname;
-                const reference = `public/images/profiles/${name}`;
+    //       const { uid } = req.params;
+    //       let cantFiles = 0;
+    //       // console.log(2, uid);
+    //       const filesArray = req.files; // Suponiendo que req.files es tu array de archivos
 
-                const newDocument = {
-                  name: name,
-                  reference: reference,
-                };
+    //       for (const file of filesArray) {
+    //         try {
+    //           const user = await findById(req, res);
+    //           if (user) {
+    //             const name = file.fieldname;
+    //             const reference = `public/images/profiles/${name}`;
 
-                if (!user.documents) {
-                  user.documents = [];
-                }
+    //             const newDocument = {
+    //               name: name,
+    //               reference: reference,
+    //             };
 
-                user.documents.push(newDocument);
-                const status = `Se han subido ${
-                  cantFiles + 1
-                } de imágenes de perfil`;
+    //             if (!user.documents) {
+    //               user.documents = [];
+    //             }
 
-                const data = {
-                  uid: uid,
-                  newDocument: newDocument,
-                  status: status,
-                };
-                const result = await updateDocument(data, res);
-                console.log(result);
+    //             user.documents.push(newDocument);
+    //             const status = `Se han subido ${
+    //               cantFiles + 1
+    //             } de imágenes de perfil`;
 
-                cantFiles++;
-              }
-            } catch (error) {
-              console.error('Error:', error);
-              // Manejar el error como sea necesario
-            }
-          }
-          // Actualizar el status del usuario indicando que se han subido x imagens de profile
+    //             const data = {
+    //               uid: uid,
+    //               newDocument: newDocument,
+    //               status: status,
+    //             };
+    //             const result = await updateDocument(data, res);
+    //             console.log(result);
 
-          res.send({
-            status: 'ok',
-            message: 'Archivos subidos satisafactoriamente',
-            filesUpload: cantFiles,
-          });
+    //             cantFiles++;
+    //           }
+    //         } catch (error) {
+    //           console.error('Error:', error);
+    //           // Manejar el error como sea necesario
+    //         }
+    //       }
+    //       // Actualizar el status del usuario indicando que se han subido x imagens de profile
 
-          //
-          //
-          //   // Crear un nuevo documento con la información obtenida
-          //
-          //   // Agregar el nuevo documento al arreglo 'documents' del usuario
-          //
+    //       res.send({
+    //         status: 'ok',
+    //         message: 'Archivos subidos satisafactoriamente',
+    //         filesUpload: cantFiles,
+    //       });
 
-          //   console.log(user);
+    //       //
+    //       //
+    //       //   // Crear un nuevo documento con la información obtenida
+    //       //
+    //       //   // Agregar el nuevo documento al arreglo 'documents' del usuario
+    //       //
 
-          //   // Guardar los cambios en la base de datos utilizando el controlador de usuario
-          //
-          //   console.log('volvi');
-          // console.log(result);
-          //res.send({ status: 'OK' });
-          //}
-          //// quiero agregar informacion a la coleccionde usuarios
-          // res
-          //   .status(200)
-          //   .send({ status: 'ok', mensaje: 'Avatar subido satisfactoriamente' });
-        } catch (error) {
-          console.log(error);
-          res.send(error);
-        }
-      }
-    );
+    //       //   console.log(user);
+
+    //       //   // Guardar los cambios en la base de datos utilizando el controlador de usuario
+    //       //
+    //       //   console.log('volvi');
+    //       // console.log(result);
+    //       //res.send({ status: 'OK' });
+    //       //}
+    //       //// quiero agregar informacion a la coleccionde usuarios
+    //       // res
+    //       //   .status(200)
+    //       //   .send({ status: 'ok', mensaje: 'Avatar subido satisfactoriamente' });
+    //     } catch (error) {
+    //       console.log(error);
+    //       res.send(error);
+    //     }
+    //   }
+    // );
   }
 }
