@@ -2,11 +2,12 @@ import { userService } from '../services/service.js';
 
 import nodemailer from 'nodemailer';
 
-
 import config from '../config/config.js';
 import __dirname from '../utils.js';
 
 // configurar el transport
+console.log(config.gmailAccount);
+console.log(config.gmailAppPassword);
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   port: 587,
@@ -19,7 +20,7 @@ const transporter = nodemailer.createTransport({
 /* console.log(config.gmailAccount);
 console.log(config.gmailAppPassword); */
 
-// verificar conexxion
+//verificar conexxion
 transporter.verify(function (error, success) {
   if (error) {
     console.log(error);
@@ -37,7 +38,7 @@ const mailOptions = {
 };
 
 const fileaenviar = __dirname + '/public/images/demofondo1.jpg';
-console.log(fileaenviar);
+// console.log(fileaenviar);
 const mailOptionsWithAttachments = {
   from: 'email test - ' + config.gmailAccount,
   to: 'mcampos@infocam.com.ar',
@@ -72,9 +73,8 @@ const mailOptionsRegister = {
 //mail optios to password reset
 const mailOptionsPasswordReset = {
   from: 'email test - ' + config.gmailAccount,
-  subject: 'Reset Password'
+  subject: 'Reset Password',
 };
-
 
 //{sendEmail, sendEmailWithAttachments
 export const sendEmail = (req, res) => {
@@ -141,9 +141,7 @@ export const sendRegistrationEmail = (req, res) => {
   }
 };
 
-
 //const tempDbMail = {}
-
 
 // export const passwordReset = async(req, res) =>{
 //   const token = req.params.token
@@ -167,10 +165,10 @@ export const sendRegistrationEmail = (req, res) => {
 //          error: error.message,
 //          message: `It was not possible to change the user password`,
 //        });
-    
+
 //   }
 //   //  1 Buscar usuario que coincida con el email del body
-    
+
 //   //  2 Por si proceder a cambiar la clave
 //   //  2 Por No retornar error por usuario no registrado
 
